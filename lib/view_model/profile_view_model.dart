@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 import '../models/user_model.dart';
+import '../repository/experience_repository.dart';
+import '../repository/activity_repository.dart';
+import '../repository/profile_analytics_repository.dart';
 import 'base_view_model.dart';
 
 class ProfileViewModel extends BaseViewModel {
@@ -7,50 +10,15 @@ class ProfileViewModel extends BaseViewModel {
   UserModel? user;
   String get error => errorMessage;
 
-  // Experience data - in a real app this would come from a repository
-  final List<Map<String, dynamic>> _experiences = [
-    {
-      'company': 'iLabs Technologies',
-      'role': 'Flutter Developer',
-      'duration': 'May 2023 - Present · 1 yr 1 mo',
-      'location': 'Bangalore, Karnataka, India',
-      'description':
-          'Working on cutting-edge mobile applications using Flutter and Dart. Implementing MVVM architecture and state management solutions.',
-      'logo':
-          'https://media.licdn.com/dms/image/C560BAQHdAaarsO-eyA/company-logo_100_100/0/1630648892726?e=1702512000&v=beta&t=8l0n9X1yTzAw66K9DAfKoI9MudX5F_tijmPqG5xus4A',
-    },
-    {
-      'company': 'TechInnovate Solutions',
-      'role': 'Junior Mobile Developer',
-      'duration': 'Jun 2022 - Apr 2023 · 11 mo',
-      'location': 'Bangalore, Karnataka, India',
-      'description':
-          'Worked on mobile app development focusing on UI/UX implementation and integration with backend services.',
-      'logo':
-          'https://media.licdn.com/dms/image/C4D0BAQHiNSL4Or29cg/company-logo_100_100/0/1519856215226?e=1702512000&v=beta&t=KhXS2fNWSxLxCJ5w5YUYYsVTXl5K3JSlyBHmUI1yTbg',
-    },
-    {
-      'company': 'CodeCraft Academy',
-      'role': 'Mobile Development Intern',
-      'duration': 'Jan 2022 - May 2022 · 5 mo',
-      'location': 'Bangalore, Karnataka, India',
-      'description':
-          'Assisted in development of mobile applications and learned industry best practices.',
-      'logo':
-          'https://media.licdn.com/dms/image/C4D0BAQHiNSL4Or29cg/company-logo_100_100/0/1519856215226?e=1702512000&v=beta&t=KhXS2fNWSxLxCJ5w5YUYYsVTXl5K3JSlyBHmUI1yTbg',
-    }
-  ]; // Analytics data (would come from a repository in a real app)
-  // Updated to match second screenshot
-  int _profileViews = 111; // Updated to match second screenshot
-  int _postImpressions = 500; // Updated to match second screenshot
-  int _searchAppearances = 85; // Updated to match second screenshot
-  bool _creatorMode = true;
-
-  // Getters for analytics data
-  int get profileViews => _profileViews;
-  int get postImpressions => _postImpressions;
-  int get searchAppearances => _searchAppearances;
-  bool get creatorMode => _creatorMode;
+  // Repositories
+  final ExperienceRepository _experienceRepository = ExperienceRepository();
+  final ActivityRepository _activityRepository = ActivityRepository();
+  final ProfileAnalyticsRepository _analyticsRepository =
+      ProfileAnalyticsRepository(); // Getters for analytics data (using sync methods for UI binding)
+  int get profileViews => _analyticsRepository.getProfileViewsSync();
+  int get postImpressions => _analyticsRepository.getPostImpressionsSync();
+  int get searchAppearances => _analyticsRepository.getSearchAppearancesSync();
+  bool get creatorMode => _analyticsRepository.getCreatorModeSync();
 
   // Set the user data and notify listeners
   void setUser(UserModel u) {
@@ -75,34 +43,35 @@ class ProfileViewModel extends BaseViewModel {
         : '${user!.connections} connections';
   }
 
-  // Get experiences
+  // Get experiences (uses sync method for immediate UI binding)
   List<Map<String, dynamic>> getExperiences({int limit = 100}) {
-    return _experiences.take(limit).toList();
+    return _experienceRepository.getExperiencesSync(limit: limit);
+  }
+
+  // Load experiences asynchronously and update UI when complete
+  Future<void> loadExperiences() async {
+    try {
+      setLoading(true);
+      await _experienceRepository.getExperiences();
+      setLoading(false);
+      notifyListeners();
+    } catch (e) {
+      setError('Failed to load experiences: $e');
+      setLoading(false);
+    }
   }
 
   // Get experience count
-  int get experienceCount => _experiences.length;
+  Future<int> get experienceCount => _experienceRepository.getExperienceCount();
 
   // Get user activities
-  List<Map<String, dynamic>> get activities {
-    return [
-      {
-        'type': 'post',
-        'title': 'Sample Post',
-        'content': 'This is a sample LinkedIn post about Flutter development.'
-      },
-      {
-        'type': 'share',
-        'title': 'Shared Article',
-        'content':
-            'Check out this great article about MVVM architecture in Flutter!'
-      }
-    ];
+  Future<List<Map<String, dynamic>>> get activities {
+    return _activityRepository.getActivities();
   }
 
   // Add new experience (for demo purposes)
   void addExperience(Map<String, dynamic> experience) {
-    _experiences.insert(0, experience);
+    _experienceRepository.addExperience(experience);
     notifyListeners();
 
     // Track for analytics
@@ -113,43 +82,59 @@ class ProfileViewModel extends BaseViewModel {
   }
 
   // Toggle creator mode
-  void toggleCreatorMode() {
-    _creatorMode = !_creatorMode;
-    trackUserAction('creator_mode_toggled', parameters: {
-      'user_id': user?.email ?? 'unknown',
-      'enabled': _creatorMode.toString(),
-    });
-    notifyListeners();
-  }
-
-  // Refresh profile data
-  void refreshProfileData() {
+  Future<void> toggleCreatorMode() async {
     setLoading(true);
-    // Simulate API call to refresh profile data
-    Future.delayed(const Duration(milliseconds: 800), () {
-      // In a real app, we would fetch this data from a repository
+
+    try {
+      await _analyticsRepository.toggleCreatorMode();
+      trackUserAction('creator_mode_toggled', parameters: {
+        'user_id': user?.email ?? 'unknown',
+        'enabled': creatorMode.toString(),
+      });
+    } catch (e) {
+      setError('Failed to toggle creator mode: $e');
+    } finally {
       setLoading(false);
       notifyListeners();
-    });
+    }
+  }
+
+  // Refresh profile data - loads all data from repositories
+  Future<void> refreshProfileData() async {
+    setLoading(true);
+
+    try {
+      // Load data from all repositories in parallel for better performance
+      await Future.wait([
+        _experienceRepository.getExperiences(),
+        _activityRepository.getActivities(),
+        _analyticsRepository.refreshAnalytics(),
+      ]);
+
+      trackUserAction('profile_data_refreshed');
+    } catch (e) {
+      setError('Failed to refresh profile data: $e');
+    } finally {
+      setLoading(false);
+      notifyListeners();
+    }
   }
 
   // Update profile stats (for demo purposes)
-  void refreshProfileStats() {
+  void refreshProfileStats() async {
     setLoading(true);
-    // Simulate API call to refresh stats
-    Future.delayed(const Duration(milliseconds: 800), () {
-      // In a real app, we would fetch this data from a repository
-      _profileViews += 5;
-      _postImpressions += 12;
-      _searchAppearances += 3;
+
+    try {
+      // Call repository to refresh analytics data
+      await _analyticsRepository.refreshAnalytics();
 
       trackUserAction('profile_stats_refreshed', parameters: {
         'user_id': user?.email ?? 'unknown',
       });
-
+    } finally {
       setLoading(false);
       notifyListeners();
-    });
+    }
   }
 
   // Method to update user profile
@@ -199,13 +184,17 @@ class ProfileViewModel extends BaseViewModel {
 
     // Simulate API call
     Future.delayed(const Duration(milliseconds: 1000), () {
-      // In a real app, this would create a post through a repository
+      // Create new activity
+      _activityRepository.addActivity(
+          {'type': 'post', 'title': 'New Post', 'content': content});
+
+      // Increment post impressions for the demo
+      _analyticsRepository.incrementPostImpressions(5);
+
       trackUserAction('post_created', parameters: {
         'user_id': user!.email,
         'content_length': content.length.toString(),
       });
-      // Increment post impressions for the demo
-      _postImpressions += 5;
 
       setLoading(false);
       notifyListeners();

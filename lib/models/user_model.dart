@@ -10,13 +10,12 @@ class UserModel {
   final int connections;
   final int followers;
   final List<String> talkingAbout;
-
   UserModel({
     required this.email,
     required this.password,
     required this.name,
     required this.headline,
-    this.company = "Google",
+    this.company = "Gooogle",
     this.location = "Bengaluru, Karnataka, India",
     required this.profileImage,
     this.bannerImage = "",

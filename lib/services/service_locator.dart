@@ -1,4 +1,5 @@
 import 'package:get_it/get_it.dart';
+import 'package:ilabs_assignment/services/data_service.dart';
 import 'api_service.dart';
 import 'analytics_service.dart';
 import 'storage_service.dart';
@@ -14,4 +15,5 @@ void setupServiceLocator() {
   locator.registerLazySingleton(() => AnalyticsService());
   locator.registerLazySingleton(() => StorageService());
   locator.registerLazySingleton(() => NavigationService());
+  locator.registerLazySingleton(() => DataService());
 }

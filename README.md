@@ -128,6 +128,13 @@ Handles data operations and provides a clean API to the ViewModel.
    flutter run
    ```
 
+5. Mock Login credentials
+  ```
+   Email: stebin.alex@example.com
+   Password: password123
+  ```
+
+
 ## Testing
 
 The application includes comprehensive test coverage with over 20 test cases:

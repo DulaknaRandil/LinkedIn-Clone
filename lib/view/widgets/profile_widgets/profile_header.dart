@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import '../../../models/user_model.dart';
+import '../network_image_mock.dart';
 
 class ProfileHeader extends StatelessWidget {
   final UserModel user;
@@ -31,13 +33,30 @@ class ProfileHeader extends StatelessWidget {
                 ),
                 child: Stack(
                   children: [
-                    // Background image - using dark background with bokeh design to match second screenshot
-                    Image.network(
-                      'https://img.freepik.com/free-photo/abstract-blur-bokeh-background_1150-6153.jpg',
-                      width: double.infinity,
-                      height: 150,
-                      fit: BoxFit.cover,
-                    ),
+                    // Background image - using test-friendly approach
+                    kIsWeb ||
+                            !const bool.fromEnvironment('FLUTTER_TEST',
+                                defaultValue: false)
+                        ? Image.network(
+                            user.bannerImage.isNotEmpty
+                                ? user.bannerImage
+                                : 'https://img.freepik.com/free-photo/abstract-blur-bokeh-background_1150-6153.jpg',
+                            width: double.infinity,
+                            height: 150,
+                            fit: BoxFit.cover,
+                            errorBuilder: (context, error, stackTrace) {
+                              return Container(
+                                width: double.infinity,
+                                height: 150,
+                                color: Colors.grey[300],
+                              );
+                            },
+                          )
+                        : NetworkImageMock(
+                            imageUrl: user.bannerImage,
+                            width: double.infinity,
+                            height: 150,
+                          ),
                     // Gradient overlay for better text visibility
                     Container(
                       decoration: BoxDecoration(
@@ -105,11 +124,27 @@ class ProfileHeader extends StatelessWidget {
                         shape: BoxShape.circle,
                         border: Border.all(color: Colors.white, width: 4),
                       ),
-                      child: CircleAvatar(
-                        radius: 48,
-                        backgroundImage: NetworkImage(
-                            'https://media.istockphoto.com/id/1300972574/photo/millennial-male-team-leader-organize-virtual-workshop-with-employees-online.jpg?s=612x612&w=0&k=20&c=uP9rKidKETywVil0dbvg_vAKyv2wjXMwWJDNPHzc_Ug='),
-                      ),
+                      child: kIsWeb ||
+                              !const bool.fromEnvironment('FLUTTER_TEST',
+                                  defaultValue: false)
+                          ? CircleAvatar(
+                              radius: 48,
+                              backgroundImage: NetworkImage(user.profileImage),
+                              onBackgroundImageError: (exception, stackTrace) {
+                                // Handle error loading image
+                                debugPrint(
+                                    'Error loading profile image: $exception');
+                              },
+                            )
+                          : CircleAvatar(
+                              radius: 48,
+                              backgroundColor: Colors.grey[300],
+                              child: Icon(
+                                Icons.person,
+                                size: 48,
+                                color: Colors.grey[600],
+                              ),
+                            ),
                     ), // Plus Icon - to match the second screenshot
                     Positioned(
                       bottom: 0,

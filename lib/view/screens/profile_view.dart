@@ -109,10 +109,6 @@ class ProfileView extends StatelessWidget {
                     ),
                   ],
                 ),
-              ), // Connection Analytics
-              ConnectionAnalyticsWidget(
-                user: user,
-                linkedInBlue: linkedInBlue,
               ),
 
               const SizedBox(height: 12),
