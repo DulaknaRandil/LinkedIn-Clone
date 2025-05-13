@@ -16,6 +16,8 @@ This project is a LinkedIn UI clone built with Flutter, following the MVVM (Mode
 - [Custom UI Components](#custom-ui-components)
 - [Performance Optimization](#performance-optimization)
 - [Security Considerations](#security-considerations)
+- [Technical Implementation](#technical-implementation)
+- [Development Workflow](#development-workflow)
 
 ## Features
 
@@ -128,33 +130,41 @@ Handles data operations and provides a clean API to the ViewModel.
    flutter run
    ```
 
-5. Mock Login credentials
+5. Mock Login credentials 
   ```
    Email: stebin.alex@example.com
    Password: password123
   ```
-
+* Here you  can  use  SignUp  with  new credentials.
 
 ## Testing
 
-The application includes comprehensive test coverage with over 20 test cases:
+The application includes comprehensive test coverage with over 20 test cases across different layers of the architecture:
 
-### Model Tests
+### Model Tests (`model_tests.dart`)
 - Tests for `UserModel` validation and initialization
 - Tests for data serialization and deserialization
+- Validation of profile data attributes
+- Verification of model constructors and default values
 
-### ViewModel Tests
-- Tests for `AuthViewModel` authentication logic
-- Tests for `ProfileViewModel` state management
-- Tests for loading states and error handling
+### ViewModel Tests (`view_model_test.dart`, `auth_view_model_tests.dart`)
+- Tests for `AuthViewModel` authentication logic including login, signup, and validation
+- Tests for `ProfileViewModel` state management and data handling
+- Tests for `HomeViewModel` feed management and post retrieval
+- Tests for loading states, error handling, and state transitions
+- Mock tests verifying interactions with repositories
 
-### UI Widget Tests
+### UI Widget Tests (`ui_widget_test.dart`)
 - Tests for custom UI components rendering
 - Tests for user interactions and event handling
+- Tests for responsive design adjustments
+- Verification of UI component properties and behaviors
 
-### Routing Tests
+### Routing Tests (`routing_tests.dart`)
 - Tests for custom page transitions (fade and slide-up)
 - Tests for navigation service functionality
+- Tests for route management and handling
+- Tests for navigation stack operations
 
 ### Running Tests
 
@@ -166,6 +176,7 @@ flutter test
 Run specific test files with:
 ```
 flutter test test/model_tests.dart
+flutter test test/auth_view_model_tests.dart
 flutter test test/view_model_test.dart
 flutter test test/routing_tests.dart
 flutter test test/ui_widget_test.dart
